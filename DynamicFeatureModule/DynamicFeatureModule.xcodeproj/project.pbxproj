@@ -7,13 +7,11 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
-		5A65271B2F0FCD13006FE893 /* ModuleError.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5A65271A2F0FCD13006FE893 /* ModuleError.swift */; };
 		5A65271E2F0FCD83006FE893 /* ZIPFoundation in Frameworks */ = {isa = PBXBuildFile; productRef = 5A65271D2F0FCD83006FE893 /* ZIPFoundation */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
 		5A6526C12F0D378A006FE893 /* DynamicFeatureModule.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = DynamicFeatureModule.app; sourceTree = BUILT_PRODUCTS_DIR; };
-		5A65271A2F0FCD13006FE893 /* ModuleError.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ModuleError.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
@@ -52,7 +50,6 @@
 		5A6526B82F0D378A006FE893 = {
 			isa = PBXGroup;
 			children = (
-				5A65271A2F0FCD13006FE893 /* ModuleError.swift */,
 				5A6526C32F0D378A006FE893 /* DynamicFeatureModule */,
 				5A6526C22F0D378A006FE893 /* Products */,
 			);
@@ -144,7 +141,6 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				5A65271B2F0FCD13006FE893 /* ModuleError.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
