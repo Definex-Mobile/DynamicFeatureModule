@@ -16,14 +16,10 @@ A robust iOS framework that enables secure, over-the-air dynamic module loading 
 - [Features](#-features)
 - [Architecture](#-architecture)
 - [Security Pipeline](#-security-pipeline)
-- [Installation](#-installation)
 - [Quick Start](#-quick-start)
 - [Configuration](#-configuration)
 - [API Reference](#-api-reference)
 - [Security](#-security)
-- [Testing](#-testing)
-- [Contributing](#-contributing)
-- [License](#-license)
 
 ---
 
