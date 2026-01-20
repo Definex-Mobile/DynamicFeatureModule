@@ -169,7 +169,7 @@ print("Backend URL: \(config.backendURL)")
 ```swift
 Task {
     do {
-        let modules = try await APIService.shared.fetchAvailableModules()
+        let modules = try await apiService.fetchAvailableModules()
         
         for module in modules {
             print("📦 \(module.name) v\(module.version)")
@@ -187,7 +187,7 @@ Task {
 ```swift
 Task {
     do {
-        let moduleURL = try await APIService.shared.downloadModule(
+        let moduleURL = try await apiService.downloadModule(
             moduleInfo: selectedModule,
             progressHandler: { progress in
                 print("Download progress: \(Int(progress * 100))%")
@@ -289,7 +289,7 @@ Fetches the list of available modules from the backend.
 **Example:**
 
 ```swift
-let modules = try await APIService.shared.fetchAvailableModules()
+let modules = try await apiService.fetchAvailableModules()
 ```
 
 ---
@@ -312,7 +312,7 @@ Downloads and installs a module through the complete security pipeline.
 **Example:**
 
 ```swift
-let url = try await APIService.shared.downloadModule(
+let url = try await apiService.downloadModule(
     moduleInfo: module,
     progressHandler: { progress in
         updateUI(progress: progress)
