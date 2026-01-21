@@ -55,27 +55,30 @@ A robust iOS framework that enables secure, over-the-air dynamic module loading 
 
 ```
 DynamicFeatureModule/
+│── Applications/
 ├── Core/
-│   ├── Services/
-│   │   └── APIService.swift          # Main API & download orchestration
-│   ├── Security/
-│   │   ├── CertificatePinner.swift   # SSL certificate validation
-│   │   ├── ChecksumValidator.swift   # File integrity verification
-│   │   ├── SignatureVerifier.swift   # Manifest signature validation
-│   │   ├── IntegrityValidator.swift  # Post-install validation
-│   │   ├── QuarantineManager.swift   # Suspicious module isolation
-│   │   └── SecurityAuditLogger.swift # Security event logging
-│   ├── Installers/
-│   │   ├── AtomicInstaller.swift     # Atomic installation with rollback
-│   │   └── SafeUnzipper.swift        # Secure ZIP extraction
-│   ├── Managers/
-│   │   ├── DownloadCoordinator.swift # Concurrent download management
-│   │   └── DiskSpaceManager.swift    # Storage validation
-│   ├── Configuration/
-│   │   └── ConfigurationManager.swift # Multi-environment config
-│   └── Models/
-│       ├── ModuleInfo.swift          # Module metadata
-│       └── ModuleListResponse.swift  # API response models
+│    ├── Configuration/
+│    ├── Model/
+│    ├── Protocols/
+│    ├── Extensions/
+│    └── Utilities/                   
+│── Installers/
+│   └── AtomicInstaller.swift         # Atomic installation with rollback
+│── Managers/
+│   ├── QuarantineManager.swift       # Suspicious module isolation
+│   ├── DiskSpaceManager.swift        # Storage validation
+│   └── ConfigurationManager.swift    # Multi-environment config
+│── Security/
+│   ├── CertificatePinner.swift   # SSL certificate validation
+│   ├── ChecksumValidator.swift   # File integrity verification
+│   ├── SignatureVerifier.swift   # Manifest signature validation
+│   ├── SHA256Validator.swift     # Validate SHA256
+│   ├── SafeUnzipper.swift        # Safe unzip file
+│   ├── IntegrityValidator.swift  # Post-install validation
+│   └── Coordinator/
+│       └── DownloadCoordinator.swift # Concurrent download management
+│── Services/
+│    └── APIService.swift             # Main API & download orchestration
 ```
 
 ### Component Responsibilities
