@@ -7,7 +7,10 @@
 
 import Foundation
 
+/// Build configuration information
 struct BuildConfiguration {
+    
+    // MARK: - Build Info
     
     static var buildNumber: String {
         Bundle.main.object(forInfoDictionaryKey: "CFBundleVersion") as? String ?? "0"
@@ -59,29 +62,5 @@ struct BuildConfiguration {
         #else
         return false
         #endif
-    }
-    
-    // MARK: - Feature Flags
-    
-    static var enableExperimentalFeatures: Bool {
-        switch environment {
-        case .development:
-            return true
-        case .test:
-            return true
-        case .production:
-            return false
-        }
-    }
-    
-    static var enableCrashReporting: Bool {
-        switch environment {
-        case .development:
-            return false
-        case .test:
-            return true
-        case .production:
-            return true
-        }
     }
 }

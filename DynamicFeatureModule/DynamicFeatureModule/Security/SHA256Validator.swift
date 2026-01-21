@@ -8,8 +8,10 @@
 import Foundation
 import CryptoKit
 
+/// Validates file integrity using SHA-256 checksum
 final class SHA256Validator {
     
+    /// Compute SHA-256 hash of a file
     static func computeHash(of fileURL: URL) throws -> String {
         guard FileManager.default.fileExists(atPath: fileURL.path) else {
             throw ModuleError.fileNotFound(fileURL.path)
@@ -22,9 +24,11 @@ final class SHA256Validator {
         return hashString
     }
     
+    /// Validate file checksum against expected hash
     static func validate(fileURL: URL, expectedChecksum: String) throws -> Bool {
         let actualChecksum = try computeHash(of: fileURL)
         
+        // Remove "sha256:" prefix if present
         let cleanExpected = expectedChecksum.replacingOccurrences(of: "sha256:", with: "")
         
         guard actualChecksum.lowercased() == cleanExpected.lowercased() else {
