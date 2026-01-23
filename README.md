@@ -474,7 +474,7 @@ Provides API endpoints for module distribution, validation, and configuration.
 
 ### 📁 Project Directory
 ```bash
-cd DynamicFeatureModule/back-end
+cd DynamicFeatureModule/backend
 ```
 
 📦 Install Dependencies
