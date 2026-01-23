@@ -462,3 +462,30 @@ The framework uses singletons with dependency injection support for testability.
 | Installation | ~1s | 20MB |
 
 ---
+
+# Dynamic Feature Module – Backend
+
+Backend service for the Dynamic Feature Module system.  
+Provides API endpoints for module distribution, validation, and configuration.
+
+---
+
+## 🚀 Backend Setup
+
+### 📁 Project Directory
+```bash
+cd DynamicFeatureModule/back-end
+```
+
+📦 Install Dependencies
+
+```bash
+npm install
+```
+
+▶️ Start Server
+
+```bash
+npm start
+```
+
