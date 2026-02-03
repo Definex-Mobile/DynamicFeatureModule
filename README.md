@@ -61,7 +61,9 @@ DynamicFeatureModule/
 │    ├── Model/
 │    ├── Protocols/
 │    ├── Extensions/
-│    └── Utilities/                   
+│    └── Utilities/
+│        │── DownloadETAEstimator.swift          # Remaining time estimate using expected bytes + throughput
+│        └── DownloadThroughputEstimator.swift   # Smoothed download throughput (bytes/sec) from progress deltas              
 │── Installers/
 │   └── AtomicInstaller.swift         # Atomic installation with rollback
 │── Managers/
@@ -78,7 +80,10 @@ DynamicFeatureModule/
 │   └── Coordinator/
 │       └── DownloadCoordinator.swift # Concurrent download management
 │── Services/
-│    └── APIService.swift             # Main API & download orchestration
+│    │── APIService.swift             # Main API & download orchestration
+│    └── Network/
+│        │── NetworkMonitor.swift     # Check internet connection (Wifi and Cercular satisfy)
+│        └── DownloadObserver.swift   # Obeserving download emit
 ```
 
 ### Component Responsibilities
