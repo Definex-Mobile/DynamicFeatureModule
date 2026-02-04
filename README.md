@@ -516,24 +516,38 @@ Provides API endpoints for module distribution, validation, and configuration.
 ---
 
 ## 🚀 Backend Setup
+These steps are required to set up and run the backend service that powers the
+DynamicFeatureModule system, enabling secure, verifiable, and versioned feature delivery to mobile clients.
 
 ### 📁 Project Directory
+
+Navigate to the backend service directory.
+
 ```bash
 cd DynamicFeatureModule/backend
 ```
 
 📦 Install Dependencies
 
+Install all required Node.js dependencies needed to run the backend server.
+
 ```bash
 npm install
 ```
 
 🔑 Generate Private and Public Keys
+
+Generate a public–private key pair used for signing module manifests,
+ensuring integrity verification, tamper detection, and secure validation on the client side.
+
 ```bash
 npm run generate-keys
 ```
 
 ▶️ Start Server
+
+Start the backend service and expose the API endpoints that mobile applications
+use to fetch module manifests and metadata.
 
 ```bash
 npm start
