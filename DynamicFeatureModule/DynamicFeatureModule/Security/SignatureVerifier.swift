@@ -80,9 +80,6 @@ struct SignatureVerifier {
         }
         
         print("✅ Manifest validation passed (signature check bypassed in DEBUG)")
-        print("   Timestamp: \(manifest.timestamp)")
-        print("   Nonce: \(manifest.nonce.prefix(16))...")
-        print("   Modules: \(manifest.modules.count)")
         return
         #endif
         
@@ -129,9 +126,6 @@ struct SignatureVerifier {
         }
         
         print("✅ Manifest signature verified successfully")
-        print("   Timestamp: \(manifest.timestamp)")
-        print("   Nonce: \(manifest.nonce.prefix(16))...")
-        print("   Modules: \(manifest.modules.count)")
     }
     
     // MARK: - Private Helpers
@@ -139,7 +133,7 @@ struct SignatureVerifier {
     /// Parses PEM-encoded RSA public key and creates SecKey
     private static func parsePublicKey(_ pemString: String) throws -> SecKey {
         // Remove PEM headers and whitespace
-        var base64Key = pemString
+        let base64Key = pemString
             .replacingOccurrences(of: "-----BEGIN PUBLIC KEY-----", with: "")
             .replacingOccurrences(of: "-----END PUBLIC KEY-----", with: "")
             .replacingOccurrences(of: "\n", with: "")

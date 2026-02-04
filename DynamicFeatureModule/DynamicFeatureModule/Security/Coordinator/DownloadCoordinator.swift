@@ -5,110 +5,158 @@
 //  Created by Serkan Kara on 20.01.2026.
 //
 
+//
+//  DownloadCoordinator.swift
+//  DynamicFeatureModule
+//
+//  Created by Serkan Kara on 20.01.2026.
+//
+
 import Foundation
 
-protocol DownloadCoordinatorProtocol {
-    func canStartDownload(moduleId: String) async throws
-    func completeDownload(moduleId: String, success: Bool, bytesDownloaded: Int64) async
+protocol DownloadCoordinatorProtocol: Sendable {
+    func canStartDownload(moduleId: String) async throws -> UUID
+    func updateProgress(moduleId: String, attemptId: UUID, bytesReceived: Int64, expectedBytes: Int64?) async
+    func completeDownload(moduleId: String, attemptId: UUID, reason: DownloadEndReason, bytesDownloaded: Int64, expectedBytes: Int64?) async
     func getStatistics() async -> DownloadStatistics
 }
 
-final class DownloadCoordinator: DownloadCoordinatorProtocol {
-    
+// MARK: - Coordinator
+
+actor DownloadCoordinator: DownloadCoordinatorProtocol {
+
     // MARK: - State
-    
-    private var activeDownloads: [String: Date] = [:]
-    private var downloadHistory: [DownloadRecord] = []
-    private let maxConcurrentDownloads = 3
-    
-    struct DownloadRecord {
-        let moduleId: String
-        let timestamp: Date
-        let success: Bool
-        let bytesDownloaded: Int64
-    }
-    
-    // MARK: - Download Management
-    
-    /// Checks if a download can proceed
-    func canStartDownload(moduleId: String) async throws {
-        // 1. Check concurrent download limit
-        guard activeDownloads.count < maxConcurrentDownloads else {
+
+    private var active: [String: DownloadAttempt] = [:]  
+    private var history: [DownloadRecord] = []
+    private let maxConcurrentDownloads: Int = 3
+
+    // Keep some history, not infinite
+    private let maxHistoryCount = 200
+
+    // MARK: - Public API
+
+    /// Call this right before starting the network task.
+    func canStartDownload(moduleId: String) async throws -> UUID {
+        // 1) concurrency limit
+        guard active.count < maxConcurrentDownloads else {
             throw SecurityError.tooManyConcurrentDownloads(limit: maxConcurrentDownloads)
         }
-        
-        // 2. Check if same module is already downloading
-        if activeDownloads[moduleId] != nil {
+
+        // 2) same module downloading
+        if active[moduleId] != nil {
             throw SecurityError.downloadAlreadyInProgress(moduleId: moduleId)
         }
-        
-        // 3. Check rate limiting
-        if let lastDownloadTime = getLastDownloadTime(for: moduleId) {
-            let timeSinceLastDownload = Date().timeIntervalSince(lastDownloadTime)
+
+        // 3) per-module cooldown (based on last attempt finish time)
+        if let last = lastFinishedAt(for: moduleId) {
+            let dt = Date().timeIntervalSince(last)
             let cooldown = SecurityConfiguration.downloadCooldown
-            
-            if timeSinceLastDownload < cooldown {
-                let remaining = cooldown - timeSinceLastDownload
+            if dt < cooldown {
+                let remaining = cooldown - dt
                 SecurityAuditLogger.log(.rateLimitExceeded(cooldownRemaining: remaining))
                 throw SecurityError.rateLimitExceeded(retryAfter: remaining)
             }
         }
-        
-        // 4. Check download quota (max downloads per hour)
-        let recentDownloads = downloadHistory.filter {
-            Date().timeIntervalSince($0.timestamp) < 3600
-        }
-        
-        if recentDownloads.count >= SecurityConfiguration.maxDownloadsPerHour {
+
+        // 4) global quota per hour (count attempts ended within last hour)
+        let oneHourAgo = Date().addingTimeInterval(-3600)
+        let recentCount = history.filter { $0.finishedAt >= oneHourAgo }.count
+        if recentCount >= SecurityConfiguration.maxDownloadsPerHour {
             throw SecurityError.downloadQuotaExceeded
         }
-        
-        // Register download
-        activeDownloads[moduleId] = Date()
+
+        // Register attempt
+        let id = UUID()
+        let now = Date()
+
+        active[moduleId] = DownloadAttempt(
+            moduleId: moduleId,
+            attemptId: id,
+            startedAt: now,
+            lastUpdatedAt: now,
+            bytesReceived: 0,
+            expectedBytes: nil
+        )
+
+        return id
     }
-    
-    /// Marks download as completed
-    func completeDownload(moduleId: String, success: Bool, bytesDownloaded: Int64) async {
-        activeDownloads.removeValue(forKey: moduleId)
-        
+
+    /// Optional: call from URLSession progress callback if you want coordinator-level observability.
+    func updateProgress(
+        moduleId: String,
+        attemptId: UUID,
+        bytesReceived: Int64,
+        expectedBytes: Int64?
+    ) async {
+        guard var a = active[moduleId], a.attemptId == attemptId else { return }
+        a.bytesReceived = max(0, bytesReceived)
+        a.expectedBytes = expectedBytes
+        a.lastUpdatedAt = Date()
+        active[moduleId] = a
+    }
+
+    /// Must be called exactly once per begun attempt.
+    func completeDownload(
+        moduleId: String,
+        attemptId: UUID,
+        reason: DownloadEndReason,
+        bytesDownloaded: Int64,
+        expectedBytes: Int64?
+    ) async {
+        let now = Date()
+
+        // Use the real start time if we have it, otherwise fall back safely.
+        let startedAt = active[moduleId]?.attemptId == attemptId
+        ? (active.removeValue(forKey: moduleId)?.startedAt ?? now)
+        : (startedAtFromHistory(moduleId: moduleId, attemptId: attemptId) ?? now)
+
+        let success = (reason == .success)
+
         let record = DownloadRecord(
             moduleId: moduleId,
-            timestamp: Date(),
+            attemptId: attemptId,
+            startedAt: startedAt,
+            finishedAt: now,
             success: success,
-            bytesDownloaded: bytesDownloaded
+            endReason: reason,
+            bytesDownloaded: max(0, bytesDownloaded),
+            expectedBytes: expectedBytes
         )
-        
-        downloadHistory.append(record)
-        
-        // Keep only last 100 records
-        if downloadHistory.count > 100 {
-            downloadHistory.removeFirst(downloadHistory.count - 100)
+
+        history.append(record)
+
+        // Trim history
+        if history.count > maxHistoryCount {
+            history.removeFirst(history.count - maxHistoryCount)
         }
     }
-    
-    /// Gets statistics for monitoring
+
     func getStatistics() async -> DownloadStatistics {
-        let totalDownloads = downloadHistory.count
-        let successfulDownloads = downloadHistory.filter { $0.success }.count
-        let failedDownloads = totalDownloads - successfulDownloads
-        let totalBytes = downloadHistory.reduce(0) { $0 + $1.bytesDownloaded }
-        
+        let total = history.count
+        let successCount = history.filter { $0.success }.count
+        let failedCount = total - successCount
+        let totalBytes = history.reduce(0) { $0 + $1.bytesDownloaded }
+
         return DownloadStatistics(
-            activeDownloads: activeDownloads.count,
-            totalDownloads: totalDownloads,
-            successfulDownloads: successfulDownloads,
-            failedDownloads: failedDownloads,
+            activeDownloads: active.count,
+            totalDownloads: total,
+            successfulDownloads: successCount,
+            failedDownloads: failedCount,
             totalBytesDownloaded: totalBytes
         )
     }
-    
-    // MARK: - Private Helpers
-    
-    private func getLastDownloadTime(for moduleId: String) -> Date? {
-        return downloadHistory
+
+    // MARK: - Helpers
+
+    private func lastFinishedAt(for moduleId: String) -> Date? {
+        history
             .filter { $0.moduleId == moduleId }
-            .sorted { $0.timestamp > $1.timestamp }
-            .first?
-            .timestamp
+            .max(by: { $0.finishedAt < $1.finishedAt })?
+            .finishedAt
+    }
+
+    private func startedAtFromHistory(moduleId: String, attemptId: UUID) -> Date? {
+        history.first(where: { $0.moduleId == moduleId && $0.attemptId == attemptId })?.startedAt
     }
 }

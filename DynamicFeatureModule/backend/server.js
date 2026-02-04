@@ -65,6 +65,14 @@ const availableModules = [
         environment: ENVIRONMENT,
         description: 'Advanced settings panel',
         author: 'Dynamic Team'
+    },
+    {
+        id: 'observer-settings',
+        name: 'Observer Module',
+        version: '1.3.3',
+        environment: ENVIRONMENT,
+        description: 'Advanced settings panel',
+        author: 'Dynamic Team'
     }
 ];
 
@@ -172,29 +180,102 @@ app.get('/api/modules', async (req, res) => {
 });
 
 // Download module
+// Download module (streaming + optional debug padding/throttle)
 app.get('/api/modules/:moduleId/download', (req, res) => {
-    const { moduleId } = req.params;
-    
-    console.log('\n━━━━━━━━━━━━━━━━━━━━━━━━━━━');
-    console.log(`📥 Download request: ${moduleId}`);
-    console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━');
-    
-    const zipPath = path.join(__dirname, 'modules', `${moduleId}.zip`);
-    
-    if (!fs.existsSync(zipPath)) {
-        console.log(`❌ Module not found: ${moduleId}`);
-        return res.status(404).json({
-            error: 'Module not found',
-            moduleId: moduleId
-        });
+  const { moduleId } = req.params;
+  console.log("🔥 HIT:", req.originalUrl);
+
+  console.log('\n━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+  console.log(`📥 Download request: ${moduleId}`);
+  console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+
+  const zipPath = path.join(__dirname, 'modules', `${moduleId}.zip`);
+
+  if (!fs.existsSync(zipPath)) {
+    console.log(`❌ Module not found: ${moduleId}`);
+    return res.status(404).json({ error: 'Module not found', moduleId });
+  }
+
+  const stat = fs.statSync(zipPath);
+
+  // Debug params (for forcing progress callbacks)
+  const debugSizeMB = Math.max(0, parseInt(req.query.debugSizeMB ?? '0', 10) || 0); // extra MB to append
+  const chunkKB = Math.max(1, parseInt(req.query.chunkKB ?? '64', 10) || 64);       // chunk size in KB
+  const delayMs = Math.max(0, parseInt(req.query.delayMs ?? '0', 10) || 0);         // delay per chunk
+
+  const extraBytes = debugSizeMB > 0 ? debugSizeMB * 1024 * 1024 : 0;
+  const totalBytes = stat.size + extraBytes;
+  const chunkSize = chunkKB * 1024;
+
+  console.log(`✅ Base zip: ${stat.size} bytes`);
+  if (extraBytes > 0) {
+    console.log(`🧪 Debug padding: +${extraBytes} bytes (${debugSizeMB}MB)`);
+    console.log(`🧩 Chunk: ${chunkSize} bytes | Delay: ${delayMs} ms`);
+  }
+
+  // Important: set headers so URLSession knows expected length -> better ETA
+  res.setHeader('Content-Type', 'application/zip');
+  res.setHeader('Content-Disposition', `attachment; filename="${moduleId}.zip"`);
+  res.setHeader('Content-Length', totalBytes);
+
+  // Stream the zip first
+  const readStream = fs.createReadStream(zipPath, { highWaterMark: chunkSize });
+
+  // If no debug mode, just pipe and finish
+  if (extraBytes === 0 && delayMs === 0) {
+    readStream.on('error', (err) => {
+      console.error('❌ Stream error:', err);
+      res.destroy(err);
+    });
+    return readStream.pipe(res);
+  }
+
+  // Throttled streaming (forces progress updates)
+  let sentExtra = 0;
+
+  const writeWithDelay = (buf, cb) => {
+    const ok = res.write(buf);
+    if (!ok) {
+      // backpressure
+      res.once('drain', () => setTimeout(cb, delayMs));
+    } else {
+      setTimeout(cb, delayMs);
     }
-    
-    const stats = fs.statSync(zipPath);
-    console.log(`✅ Sending ${moduleId}.zip (${stats.size} bytes)`);
-    console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━\n');
-    
-    res.download(zipPath, `${moduleId}.zip`);
+  };
+
+  readStream.on('data', (chunk) => {
+    readStream.pause();
+    writeWithDelay(chunk, () => readStream.resume());
+  });
+
+  readStream.on('end', () => {
+    // append padding in chunks
+    const pushPadding = () => {
+      if (sentExtra >= extraBytes) {
+        res.end();
+        console.log('✅ Stream finished');
+        console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━\n');
+        return;
+      }
+
+      const remaining = extraBytes - sentExtra;
+      const size = Math.min(chunkSize, remaining);
+      sentExtra += size;
+
+      // deterministic bytes (no need crypto)
+      const pad = Buffer.alloc(size, 0x41); // 'A'
+      writeWithDelay(pad, pushPadding);
+    };
+
+    pushPadding();
+  });
+
+  readStream.on('error', (err) => {
+    console.error('❌ Stream error:', err);
+    res.destroy(err);
+  });
 });
+
 
 // MARK: - Module ZIP Generation
 

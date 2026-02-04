@@ -15,13 +15,13 @@ struct SecurityConfiguration {
     /// This should be the public key corresponding to the backend's private key
     static let manifestPublicKey = """
     -----BEGIN PUBLIC KEY-----
-    MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AbIIBCgKsAQEA2Z3qX0LW1YsyV8cMqHqm
-    P9xHFq7KYJ+vE5J9XxYZH7NkW2dQ8sL1mR3pK9xT7sE6WqJ8vL2nK9xY8sM1pL2n
-    K9xY8sM1pL2nK9xY8sM1aL2nK9xY8sM1pl2nK9xY8sM1pL2nK9xY8sM1pL2nK9xY
-    8sM1pL2nK9xY8sM1pL2nK9xY8sM1pL2nK9xY8sM1pL2nK9xY8sM1pL3nK4xY8sM1
-    pL2nK9xk8sM1pL2nK9xY8sM1pL2nK9xY8sM1pL2nK9xY8sM1pL2nK9xY8sM1pL2n
-    K9xY8sM1pL2nK9xY8sM1pL2nK9xY8sM1pL2nK9xY8sM1pL2nK9xY8sM1pL2nK9xY
-    8sM1pL2nK9xY8sM1pL2nK9xY8sM1pL2nK9xY8sM1pL2nK9xYCAwEAAQ==
+    MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAs2wiNOOtemnYS3zQVlF4
+    Px3ZqdA8weGNrFySKZuR4Onvqh9SOAb2Xd2WVFsTu099Olpiom16u6dyG+3BXbXn
+    T4+kmgnfbrrPwaAevhZaWRN0NVaRRBdczfyKD1IxcHMMzUUVQ0hutrGahOAIg3oS
+    +oajt9jl5o/9iOfFzZ4SadTvyyFK5JYYVT//1uUBSRQSBifeTdRzSfQeaSs6R6XT
+    SKjxs2FBq1YOBaE2tBPjgbeJdgw9+5RR1B4F+2emhFiMY8K4FRiuXdO6e3/RnOi+
+    XfmWVhn1tj3lGp0Yd7luxjvUX5vyJZW+AkZ1NDtA6BqGft+gNmSRl1dIl3+suGBR
+    LQIDAQAB
     -----END PUBLIC KEY-----
     """
     
@@ -87,6 +87,20 @@ struct SecurityConfiguration {
         return false
         #endif
     }()
+    
+    // MARK: - Network Policies
+    
+    /// Allow downloads on expensive networks (cellular with data plan warnings)
+    static let allowExpensiveNetworkDownloads: Bool = true
+    
+    /// Allow downloads on constrained networks (Low Data Mode)
+    static let allowConstrainedNetworkDownloads: Bool = false
+    
+    /// Warn user before downloading on cellular
+    static let warnOnCellularDownloads: Bool = true
+    
+    /// Maximum file size for cellular downloads (10 MB)
+    static let maxCellularDownloadSize: Int64 = 10 * 1024 * 1024
     
     // MARK: - Integrity Checks
     
