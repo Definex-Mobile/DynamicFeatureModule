@@ -429,6 +429,46 @@ Quarantined files are:
 
 ---
 
+### Network Connection
+
+Wifi, celluar, ethernet, loopback speed and size check
+
+```swift
+// Check WiFi first
+if path.usesInterfaceType(.wifi) {
+   return .wifi
+}
+
+ // Check Cellular
+if path.usesInterfaceType(.cellular) {
+  return .cellular
+}
+        
+// Check Wired (Ethernet) - rare on iOS but possible with adapters
+if path.usesInterfaceType(.wiredEthernet) {
+  return .wired
+}
+        
+// Other types (e.g., loopback)
+if path.usesInterfaceType(.loopback) {
+  return .loopback
+}
+```
+
+#### DownloadETAEstimator
+
+```swift
+let eta = DownloadETAEstimator.etaSeconds(bytesReceived: totalBytesWritten, bytesExpected: expected, bps: bps)
+```
+
+#### DownloadThroughputEstimator
+
+```swift
+let bps = await self.speedEstimator.update(totalBytes: totalBytesWritten)
+```
+
+---
+
 ## 🏗️ Project Structure Best Practices
 
 ### Modular Architecture
@@ -486,6 +526,11 @@ cd DynamicFeatureModule/backend
 
 ```bash
 npm install
+```
+
+🔑 Generate Private and Public Keys
+```bash
+npm run generate-keys
 ```
 
 ▶️ Start Server
