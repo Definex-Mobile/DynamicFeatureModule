@@ -55,27 +55,35 @@ A robust iOS framework that enables secure, over-the-air dynamic module loading 
 
 ```
 DynamicFeatureModule/
+│── Applications/
 ├── Core/
-│   ├── Services/
-│   │   └── APIService.swift          # Main API & download orchestration
-│   ├── Security/
-│   │   ├── CertificatePinner.swift   # SSL certificate validation
-│   │   ├── ChecksumValidator.swift   # File integrity verification
-│   │   ├── SignatureVerifier.swift   # Manifest signature validation
-│   │   ├── IntegrityValidator.swift  # Post-install validation
-│   │   ├── QuarantineManager.swift   # Suspicious module isolation
-│   │   └── SecurityAuditLogger.swift # Security event logging
-│   ├── Installers/
-│   │   ├── AtomicInstaller.swift     # Atomic installation with rollback
-│   │   └── SafeUnzipper.swift        # Secure ZIP extraction
-│   ├── Managers/
-│   │   ├── DownloadCoordinator.swift # Concurrent download management
-│   │   └── DiskSpaceManager.swift    # Storage validation
-│   ├── Configuration/
-│   │   └── ConfigurationManager.swift # Multi-environment config
-│   └── Models/
-│       ├── ModuleInfo.swift          # Module metadata
-│       └── ModuleListResponse.swift  # API response models
+│    ├── Configuration/
+│    ├── Model/
+│    ├── Protocols/
+│    ├── Extensions/
+│    └── Utilities/
+│        │── DownloadETAEstimator.swift          # Remaining time estimate using expected bytes + throughput
+│        └── DownloadThroughputEstimator.swift   # Smoothed download throughput (bytes/sec) from progress deltas              
+│── Installers/
+│   └── AtomicInstaller.swift         # Atomic installation with rollback
+│── Managers/
+│   ├── QuarantineManager.swift       # Suspicious module isolation
+│   ├── DiskSpaceManager.swift        # Storage validation
+│   └── ConfigurationManager.swift    # Multi-environment config
+│── Security/
+│   ├── CertificatePinner.swift   # SSL certificate validation
+│   ├── ChecksumValidator.swift   # File integrity verification
+│   ├── SignatureVerifier.swift   # Manifest signature validation
+│   ├── SHA256Validator.swift     # Validate SHA256
+│   ├── SafeUnzipper.swift        # Safe unzip file
+│   ├── IntegrityValidator.swift  # Post-install validation
+│   └── Coordinator/
+│       └── DownloadCoordinator.swift # Concurrent download management
+│── Services/
+│    │── APIService.swift             # Main API & download orchestration
+│    └── Network/
+│        │── NetworkMonitor.swift     # Check internet connection (Wifi and Cercular satisfy)
+│        └── DownloadObserver.swift   # Obeserving download emit
 ```
 
 ### Component Responsibilities
@@ -421,6 +429,46 @@ Quarantined files are:
 
 ---
 
+### Network Connection
+
+Wifi, celluar, ethernet, loopback speed and size check
+
+```swift
+// Check WiFi first
+if path.usesInterfaceType(.wifi) {
+   return .wifi
+}
+
+ // Check Cellular
+if path.usesInterfaceType(.cellular) {
+  return .cellular
+}
+        
+// Check Wired (Ethernet) - rare on iOS but possible with adapters
+if path.usesInterfaceType(.wiredEthernet) {
+  return .wired
+}
+        
+// Other types (e.g., loopback)
+if path.usesInterfaceType(.loopback) {
+  return .loopback
+}
+```
+
+#### DownloadETAEstimator
+
+```swift
+let eta = DownloadETAEstimator.etaSeconds(bytesReceived: totalBytesWritten, bytesExpected: expected, bps: bps)
+```
+
+#### DownloadThroughputEstimator
+
+```swift
+let bps = await self.speedEstimator.update(totalBytes: totalBytesWritten)
+```
+
+---
+
 ## 🏗️ Project Structure Best Practices
 
 ### Modular Architecture
@@ -459,3 +507,35 @@ The framework uses singletons with dependency injection support for testability.
 | Installation | ~1s | 20MB |
 
 ---
+
+# Dynamic Feature Module – Backend
+
+Backend service for the Dynamic Feature Module system.  
+Provides API endpoints for module distribution, validation, and configuration.
+
+---
+
+## 🚀 Backend Setup
+
+### 📁 Project Directory
+```bash
+cd DynamicFeatureModule/backend
+```
+
+📦 Install Dependencies
+
+```bash
+npm install
+```
+
+🔑 Generate Private and Public Keys
+```bash
+npm run generate-keys
+```
+
+▶️ Start Server
+
+```bash
+npm start
+```
+
